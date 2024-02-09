@@ -1,0 +1,36 @@
+import cv2
+
+# Load pre-trained YOLO model
+net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+classes = []
+with open("coco.names", "r") as f:
+    classes = f.read().strip().split("\n")
+
+# Load image and perform object detection
+image = cv2.imread("object_detection_example.jpg")
+blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+net.setInput(blob)
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+outputs = net.forward(output_layers)
+
+# Process detection results
+for output in outputs:
+    for detection in output:
+        scores = detection[5:]
+        class_id = np.argmax(scores)
+        confidence = scores[class_id]
+        if confidence > 0.5:
+            center_x = int(detection[0] * image.shape[1])
+            center_y = int(detection[1] * image.shape[0])
+            width = int(detection[2] * image.shape[1])
+            height = int(detection[3] * image.shape[0])
+            x = int(center_x - width / 2)
+            y = int(center_y - height / 2)
+            cv2.rectangle(image, (x, y), (x + width, y + height), (0, 255, 0), 2)
+            cv2.putText(image, classes[class_id], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+# Display detected objects
+cv2.imshow("Object Detection", image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
